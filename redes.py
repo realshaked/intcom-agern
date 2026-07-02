@@ -4,7 +4,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
 from sklearn.metrics import f1_score, classification_report, confusion_matrix
 
 
@@ -38,15 +37,18 @@ class RedeNeuralCervical(nn.Module):
 # 2. TREINAMENTO (helper interno reutilizado pela avaliação e pelo diagnóstico)
 
 def _treinar_modelo(cromossomo, X_train, y_train, X_val, y_val, num_classes,
-                    epochs=150, batch_size=64, paciencia=15):
+                    epochs=500, paciencia=30):
     """
     Treina a rede com os atributos ativos do cromossomo e devolve
     (modelo, device, indices_selecionados). Retorna (None, ...) se o
     cromossomo não selecionar nenhum atributo.
 
     Decisões de treinamento (correção do classificador degenerado):
-    - Mini-batches: cada época tem vários passos do otimizador (e não apenas um,
-      como no treino em lote completo), permitindo a convergência efetiva.
+    - Treino em LOTE COMPLETO (full-batch): em uma base grande (~150 mil
+      registros), o custo por passo é dominado pela GPU e não por laços Python;
+      full-batch executa um único passo vetorizado por época, mantendo o
+      treinamento rápido. O problema do colapso NÃO era o full-batch em si, mas
+      o baixo número de passos (50) — resolvido aqui com muitas mais épocas.
     - Perda ponderada por classe (pesos = inverso da frequência): impede que a
       rede minimize a perda prevendo sempre a classe majoritária.
     - Snapshot da melhor época por perda de validação, com early stopping por
@@ -64,11 +66,6 @@ def _treinar_modelo(cromossomo, X_train, y_train, X_val, y_val, num_classes,
     X_val_t = torch.tensor(X_val[:, indices_selecionados], dtype=torch.float32).to(device)
     y_val_t = torch.tensor(y_val, dtype=torch.long).to(device)
 
-    loader = DataLoader(
-        TensorDataset(X_train_t, y_train_t),
-        batch_size=batch_size, shuffle=True
-    )
-
     modelo = RedeNeuralCervical(len(indices_selecionados), num_classes).to(device)
 
     # Pesos por classe = inverso da frequência; classes ausentes no treino -> peso 0
@@ -84,11 +81,10 @@ def _treinar_modelo(cromossomo, X_train, y_train, X_val, y_val, num_classes,
 
     for epoch in range(epochs):
         modelo.train()
-        for xb, yb in loader:
-            optimizer.zero_grad()
-            perda = criterion(modelo(xb), yb)
-            perda.backward()
-            optimizer.step()
+        optimizer.zero_grad()
+        perda = criterion(modelo(X_train_t), y_train_t)  # passo em lote completo
+        perda.backward()
+        optimizer.step()
 
         modelo.eval()
         with torch.no_grad():
