@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from utils import pre_processar_dados, separar_conjuntos
 from ag import AlgoritmoGenetico
-from redes import treinar_e_avaliar_rede_neural
+from redes import treinar_e_avaliar_rede_neural, diagnostico_teste
 
 # Configurações Iniciais
 CAMINHO_ARQUIVO = 'Base Slim Morte cancer de útero.xlsx'
@@ -101,6 +101,14 @@ def main():
 
     print(f"F1 (teste) com atributos selecionados ({len(atributos_selecionados)}): {f1_teste_selecionado:.4f}")
     print(f"F1 (teste) com todos os atributos ({num_atributos_total}):     {f1_teste_baseline:.4f}")
+
+    # Diagnóstico: matriz de confusão e F1 por classe no teste, para verificar
+    # se a rede realmente discrimina as classes (e não colapsa na majoritária).
+    print("\n" + "-" * 40)
+    print("DIAGNÓSTICO DO MELHOR MODELO (atributos selecionados)")
+    print("-" * 40)
+    diagnostico_teste(melhor_cromossomo_geral, X_train, y_train, X_val, y_val,
+                      X_test, y_test, num_classes, nomes_classes)
 
     # 6. Resumo em arquivo para compor o relatório técnico
     with open('resultados_finais.txt', 'w', encoding='utf-8') as f:
