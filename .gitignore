@@ -1,0 +1,18 @@
+# Artefatos Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Ambientes virtuais
+venv/
+.venv/
+env/
+
+# Saídas geradas pela execução (regeneráveis por main.py)
+resultados_finais.txt
+ranking_atributos.csv
+
+# Sistema
+.DS_Store
+.ipynb_checkpoints/
