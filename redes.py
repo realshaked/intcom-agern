@@ -37,7 +37,7 @@ class RedeNeuralCervical(nn.Module):
 # 2. TREINAMENTO (helper interno reutilizado pela avaliação e pelo diagnóstico)
 
 def _treinar_modelo(cromossomo, X_train, y_train, X_val, y_val, num_classes,
-                    epochs=500, paciencia=30):
+                    epochs=150, paciencia=10):
     """
     Treina a rede com os atributos ativos do cromossomo e devolve
     (modelo, device, indices_selecionados). Retorna (None, ...) se o
